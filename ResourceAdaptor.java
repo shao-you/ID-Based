@@ -2,14 +2,14 @@ import java.sql.*;
 
 public class ResourceAdaptor {
 	  private Connection con = null; //Database objects 
-	  //³s±µobject 
+	  //ï¿½sï¿½ï¿½object 
 	  private Statement stat = null; 
-	  //°õ¦æ,¶Ç¤J¤§sql¬°§¹¾ã¦r¦ê 
+	  //ï¿½ï¿½ï¿½ï¿½,ï¿½Ç¤Jï¿½ï¿½sqlï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½rï¿½ï¿½ 
 	  private ResultSet rs = null; 
-	  //µ²ªG¶° 
+	  //ï¿½ï¿½ï¿½Gï¿½ï¿½ 
 	  private PreparedStatement pst = null; 
-	  //°õ¦æ,¶Ç¤J¤§sql¬°¹wÀx¤§¦r¥Ó,»Ý­n¶Ç¤JÅÜ¼Æ¤§¦ì¸m 
-	  //¥ý§Q¥Î?¨Ó°µ¼Ð¥Ü 
+	  //ï¿½ï¿½ï¿½ï¿½,ï¿½Ç¤Jï¿½ï¿½sqlï¿½ï¿½ï¿½wï¿½xï¿½ï¿½ï¿½rï¿½ï¿½,ï¿½Ý­nï¿½Ç¤Jï¿½Ü¼Æ¤ï¿½ï¿½ï¿½ï¿½m 
+	  //ï¿½ï¿½ï¿½Qï¿½ï¿½?ï¿½Ó°ï¿½ï¿½Ð¥ï¿½ 
 	  
 	  private String dropdbSQL = "DROP TABLE User "; 
 	  
@@ -27,32 +27,32 @@ public class ResourceAdaptor {
 	  { 
 	    try { 
 	      Class.forName("com.mysql.jdbc.Driver"); 
-	      //µù¥Udriver 
+	      //ï¿½ï¿½ï¿½Udriver 
 	      String url1 = "jdbc:mysql://dbhome.cs.nctu.edu.tw/wusy_cs_ttt?"
 	    		  + "useUnicode=true&characterEncoding=Big5";
 	      String url2 = "jdbc:mysql://140.113.215.4/test?"
 	    		  + "useUnicode=true&characterEncoding=Big5";
-	      //con = DriverManager.getConnection(url1,"wusy_cs","13145201"); 
+	      //con = DriverManager.getConnection(url1,"wusy_cs",""); 
 	      con = DriverManager.getConnection(url2,"dlink","123456"); 
-	      //¨ú±oconnection
+	      //ï¿½ï¿½ï¿½oconnection
 
 	//jdbc:mysql://localhost/test?useUnicode=true&characterEncoding=Big5
-	//localhost¬O¥D¾÷¦W,test¬Odatabase¦W
-	//useUnicode=true&characterEncoding=Big5¨Ï¥Îªº½s½X 
+	//localhostï¿½Oï¿½Dï¿½ï¿½ï¿½W,testï¿½Odatabaseï¿½W
+	//useUnicode=true&characterEncoding=Big5ï¿½Ï¥Îªï¿½ï¿½sï¿½X 
 	      
 	    } 
 	    catch(ClassNotFoundException e) 
 	    { 
 	      System.out.println("DriverClassNotFound :"+e.toString()); 
-	    }//¦³¥i¯à·|²£¥Ísqlexception 
+	    }//ï¿½ï¿½ï¿½iï¿½ï¿½ï¿½|ï¿½ï¿½ï¿½ï¿½sqlexception 
 	    catch(SQLException x) { 
 	      System.out.println("Exception :"+x.toString()); 
 	    } 
 	    System.out.println("SUCCESSFUL CONNECTION!!");
 	    
 	  } 
-	  //«Ø¥ßtableªº¤è¦¡ 
-	  //¥i¥H¬Ý¬ÝStatementªº¨Ï¥Î¤è¦¡ 
+	  //ï¿½Ø¥ï¿½tableï¿½ï¿½ï¿½è¦¡ 
+	  //ï¿½iï¿½Hï¿½Ý¬ï¿½Statementï¿½ï¿½ï¿½Ï¥Î¤è¦¡ 
 	  public void createTable() 
 	  { 
 	    try 
@@ -69,8 +69,8 @@ public class ResourceAdaptor {
 	      Close(); 
 	    } 
 	  } 
-	  //·s¼W¸ê®Æ 
-	  //¥i¥H¬Ý¬ÝPrepareStatementªº¨Ï¥Î¤è¦¡ 
+	  //ï¿½sï¿½Wï¿½ï¿½ï¿½ï¿½ 
+	  //ï¿½iï¿½Hï¿½Ý¬ï¿½PrepareStatementï¿½ï¿½ï¿½Ï¥Î¤è¦¡ 
 	  public void insertTable( String name,String passwd) 
 	  { 
 	    try 
@@ -90,8 +90,8 @@ public class ResourceAdaptor {
 	      Close(); 
 	    } 
 	  } 
-	  //§R°£Table, 
-	  //¸ò«Ø¥ßtable«Ü¹³ 
+	  //ï¿½Rï¿½ï¿½Table, 
+	  //ï¿½ï¿½ï¿½Ø¥ï¿½tableï¿½Ü¹ï¿½ 
 	  public void dropTable() 
 	  { 
 	    try 
@@ -108,8 +108,8 @@ public class ResourceAdaptor {
 	      Close(); 
 	    } 
 	  } 
-	  //¬d¸ß¸ê®Æ 
-	  //¥i¥H¬Ý¬Ý¦^¶Çµ²ªG¶°¤Î¨ú±o¸ê®Æ¤è¦¡ 
+	  //ï¿½dï¿½ß¸ï¿½ï¿½ï¿½ 
+	  //ï¿½iï¿½Hï¿½Ý¬Ý¦^ï¿½Çµï¿½ï¿½Gï¿½ï¿½ï¿½Î¨ï¿½ï¿½oï¿½ï¿½ï¿½Æ¤è¦¡ 
 	  public void SelectTable() 
 	  { 
 	    try 
@@ -133,8 +133,8 @@ public class ResourceAdaptor {
 	      Close(); 
 	    } 
 	  } 
-	  //§¹¾ã¨Ï¥Î§¹¸ê®Æ®w«á,°O±o­nÃö³¬©Ò¦³Object 
-	  //§_«h¦bµ¥«ÝTimeout®É,¥i¯à·|¦³Connection poorªºª¬ªp 
+	  //ï¿½ï¿½ï¿½ï¿½ï¿½Ï¥Î§ï¿½ï¿½ï¿½ï¿½Æ®wï¿½ï¿½,ï¿½Oï¿½oï¿½nï¿½ï¿½ï¿½ï¿½ï¿½Ò¦ï¿½Object 
+	  //ï¿½_ï¿½hï¿½bï¿½ï¿½ï¿½ï¿½Timeoutï¿½ï¿½,ï¿½iï¿½ï¿½ï¿½|ï¿½ï¿½Connection poorï¿½ï¿½ï¿½ï¿½ï¿½p 
 	  private void Close() 
 	  { 
 	    try 
@@ -164,7 +164,7 @@ public class ResourceAdaptor {
 
 	  public static void main(String[] args) 
 	  { 
-	    //´ú¬Ý¬Ý¬O§_¥¿±` 
+	    //ï¿½ï¿½ï¿½Ý¬Ý¬Oï¿½_ï¿½ï¿½ï¿½` 
 		ResourceAdaptor test = new ResourceAdaptor(); 
 	    //test.dropTable(); 
 	    //test.createTable(); 
