@@ -2,14 +2,14 @@ import java.sql.*;
 
 public class ResourceAdaptor {
 	  private Connection con = null; //Database objects 
-	  //�s��object 
+	  //連接object 
 	  private Statement stat = null; 
-	  //����,�ǤJ��sql�������r�� 
+	  //執行,傳入之sql為完整字串 
 	  private ResultSet rs = null; 
-	  //���G�� 
+	  //結果集 
 	  private PreparedStatement pst = null; 
-	  //����,�ǤJ��sql���w�x���r��,�ݭn�ǤJ�ܼƤ����m 
-	  //���Q��?�Ӱ��Х� 
+	  //執行,傳入之sql為預儲之字申,需要傳入變數之位置 
+	  //先利用?來做標示 
 	  
 	  private String dropdbSQL = "DROP TABLE User "; 
 	  
@@ -27,32 +27,32 @@ public class ResourceAdaptor {
 	  { 
 	    try { 
 	      Class.forName("com.mysql.jdbc.Driver"); 
-	      //���Udriver 
+	      //註冊driver 
 	      String url1 = "jdbc:mysql://dbhome.cs.nctu.edu.tw/wusy_cs_ttt?"
 	    		  + "useUnicode=true&characterEncoding=Big5";
 	      String url2 = "jdbc:mysql://140.113.215.4/test?"
 	    		  + "useUnicode=true&characterEncoding=Big5";
-	      //con = DriverManager.getConnection(url1,"wusy_cs",""); 
+	      //con = DriverManager.getConnection(url1,"wusy_cs","13145201"); 
 	      con = DriverManager.getConnection(url2,"dlink","123456"); 
-	      //���oconnection
+	      //取得connection
 
 	//jdbc:mysql://localhost/test?useUnicode=true&characterEncoding=Big5
-	//localhost�O�D���W,test�Odatabase�W
-	//useUnicode=true&characterEncoding=Big5�ϥΪ��s�X 
+	//localhost是主機名,test是database名
+	//useUnicode=true&characterEncoding=Big5使用的編碼 
 	      
 	    } 
 	    catch(ClassNotFoundException e) 
 	    { 
 	      System.out.println("DriverClassNotFound :"+e.toString()); 
-	    }//���i���|����sqlexception 
+	    }//有可能會產生sqlexception 
 	    catch(SQLException x) { 
 	      System.out.println("Exception :"+x.toString()); 
 	    } 
 	    System.out.println("SUCCESSFUL CONNECTION!!");
 	    
 	  } 
-	  //�إ�table���覡 
-	  //�i�H�ݬ�Statement���ϥΤ覡 
+	  //建立table的方式 
+	  //可以看看Statement的使用方式 
 	  public void createTable() 
 	  { 
 	    try 
@@ -69,8 +69,8 @@ public class ResourceAdaptor {
 	      Close(); 
 	    } 
 	  } 
-	  //�s�W���� 
-	  //�i�H�ݬ�PrepareStatement���ϥΤ覡 
+	  //新增資料 
+	  //可以看看PrepareStatement的使用方式 
 	  public void insertTable( String name,String passwd) 
 	  { 
 	    try 
@@ -90,8 +90,8 @@ public class ResourceAdaptor {
 	      Close(); 
 	    } 
 	  } 
-	  //�R��Table, 
-	  //���إ�table�ܹ� 
+	  //刪除Table, 
+	  //跟建立table很像 
 	  public void dropTable() 
 	  { 
 	    try 
@@ -108,8 +108,8 @@ public class ResourceAdaptor {
 	      Close(); 
 	    } 
 	  } 
-	  //�d�߸��� 
-	  //�i�H�ݬݦ^�ǵ��G���Ψ��o���Ƥ覡 
+	  //查詢資料 
+	  //可以看看回傳結果集及取得資料方式 
 	  public void SelectTable() 
 	  { 
 	    try 
@@ -133,8 +133,8 @@ public class ResourceAdaptor {
 	      Close(); 
 	    } 
 	  } 
-	  //�����ϥΧ����Ʈw��,�O�o�n�����Ҧ�Object 
-	  //�_�h�b����Timeout��,�i���|��Connection poor�����p 
+	  //完整使用完資料庫後,記得要關閉所有Object 
+	  //否則在等待Timeout時,可能會有Connection poor的狀況 
 	  private void Close() 
 	  { 
 	    try 
@@ -164,7 +164,7 @@ public class ResourceAdaptor {
 
 	  public static void main(String[] args) 
 	  { 
-	    //���ݬݬO�_���` 
+	    //測看看是否正常 
 		ResourceAdaptor test = new ResourceAdaptor(); 
 	    //test.dropTable(); 
 	    //test.createTable(); 
