@@ -1,5 +1,5 @@
 package net.floodlightcontroller.headerextract;
- 
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,7 +46,8 @@ import net.floodlightcontroller.routing.Route;
 import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
 import net.floodlightcontroller.topology.ITopologyService;
 import net.floodlightcontroller.util.OFMessageDamper;
- 
+import java.util.Date;
+import java.sql.*;
  
 public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
  
@@ -128,23 +129,75 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
  
 	@Override
 	public net.floodlightcontroller.core.IListener.Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
-		
-		//uid/time/dpid/in_port
-		//header:ip/mac/port/protocol
+
+		switch (msg.getType()) {
+        case PACKET_IN:
+            //return this.processPacketInMessage(sw, (OFPacketIn) msg, cntx);
+        default:
+            break;
+    }
+		//uid/in_port/sw_dpid/time
+		//header: mac/ip/port/protocol
+		String Association_ID;
 		String uid;
+		
 		short in_port;
+		long sw_dpid;
 		
+		String src_mac;
+		String dst_mac;
+		String src_ip;
+		String dst_ip;
+		short src_port;
+		short dst_port;
+		byte protocol;//Protocol Numbers: http://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml
+		java.sql.Timestamp time;
+		//=============================================================
+		java.util.Date current_time = new java.util.Date(); 
+		long t = current_time.getTime();
+		time = new java.sql.Timestamp(t);
 		
+		IDevice srcDevice = IDeviceService.fcStore.get(cntx, IDeviceService.CONTEXT_SRC_DEVICE);
+	    SwitchPort[] srcDaps = srcDevice.getAttachmentPoints();//Get all unique attachment points associated with the device.
+	    in_port = (short)srcDaps[0].getPort();
+	    sw_dpid = srcDaps[0].getSwitchDPID();
+	    /*int iSrcDaps = 0, iDstDaps = 0;
+
+        while ((iSrcDaps < srcDaps.length) && (iDstDaps < dstDaps.length)) {
+                SwitchPort srcDap = srcDaps[iSrcDaps];
+                SwitchPort dstDap = dstDaps[iDstDaps];
+        }*/
 		
 		OFPacketIn pin = (OFPacketIn) msg;
 		OFMatch match = new OFMatch();
 		match.loadFromPacket(pin.getPacketData(), pin.getInPort());
-
-		/*Long sourceMACHash = Ethernet.toLong(match.getDataLayerDestination());
+		
+		Long src_mac_long = Ethernet.toLong(match.getDataLayerSource());
+		Long dst_mac_long = Ethernet.toLong(match.getDataLayerDestination());
+		src_mac = HexString.toHexString(src_mac_long);
+		dst_mac = HexString.toHexString(dst_mac_long);
+		//src_mac = match.getDataLayerSource().toString();
+		//dst_mac = match.getDataLayerDestination().toString();
+		
+		src_ip = IPv4.fromIPv4Address(match.getNetworkSource());//String<-->int, IPv4.fromIPv4Address(), IPv4.toIPv4Address()
+		dst_ip = IPv4.fromIPv4Address(match.getNetworkDestination());
+		src_port = match.getTransportSource();
+		dst_port = match.getTransportDestination();
+		protocol = match.getNetworkProtocol();
+		//=============================================================
+		//query Registered_mac table to check idle/pass of src_mac
+		//get uid/Association_ID
+		//query Association table by scr_mac, and find the latest record, and copy uid into new record 
+		ResourceAdaptor test = new ResourceAdaptor();
+		String latest_record = "SELECT `Association_ID`, `uid` FROM `Association` ORDER BY `time` DESC LIMIT 1";
+		//=============================================================
+		//=============================================================
+		//=============================================================
+		Long sourceMACHash = Ethernet.toLong(match.getDataLayerDestination());
 		System.out.println("$$$$$-Get the Destination IP Address-$$$$$"); 
 		System.out.println(IPv4.fromIPv4Address(match.getNetworkDestination()));
 		System.out.println("$$$$$-Mac Address Destination-$$$$$$");
-		System.out.println(HexString.toHexString(sourceMACHash));*/
+		System.out.println(HexString.toHexString(sourceMACHash));/**/
  
 		Integer ipaddr = IPv4.toIPv4Address("10.0.0.1");
 		Integer broadcast = IPv4.toIPv4Address("255.255.255.255");
@@ -156,110 +209,141 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 				&& (match.getNetworkDestination())!=broadcast 
 				&& match.getDataLayerDestination()!=Ethernet.toMACAddress(mac))
 		{
-			Iterator<? extends IDevice> dstiter = deviceManager.queryDevices(null, null, ipaddr, null, null);
-			IDevice dvc = null;
-			dvc = (IDevice) dstiter.next();
-			
-			IDevice srcDevice = IDeviceService.fcStore.get(cntx, IDeviceService.CONTEXT_SRC_DEVICE);
-			//IDevice dstDevice = IDeviceService.fcStore.get(cntx, IDeviceService.CONTEXT_DST_DEVICE);
-			SwitchPort[] srcDaps = srcDevice.getAttachmentPoints();
-			SwitchPort[] dstDaps = dvc.getAttachmentPoints();//dstDevice.getAttachmentPoints();
-	
-			Route route = 
-					routingEngine.getRoute(srcDaps[0].getSwitchDPID(), (short)srcDaps[0].getPort(),
-							dstDaps[0].getSwitchDPID(), (short)dstDaps[0].getPort(), 0); 
-	
-			match.setNetworkProtocol(IPv4.PROTOCOL_UDP);
-			match.setDataLayerType(Ethernet.TYPE_IPv4);
-			//match.setTransportSource(match.getTransportSource());
-			//match.setNetworkDestination(match.getNetworkDestination());
-			match.setNetworkSource(match.getNetworkSource());
-			match.setWildcards(~(OFMatch.OFPFW_NW_PROTO
-					| OFMatch.OFPFW_DL_TYPE 
-					//| OFMatch.OFPFW_TP_SRC 
-					//| OFMatch.OFPFW_NW_DST_MASK
-					| OFMatch.OFPFW_NW_SRC_MASK)); 
-	
-			OFFlowMod mod = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
-			mod.setMatch(match);
-			mod.setCommand(OFFlowMod.OFPFC_ADD);
-			mod.setIdleTimeout((short)0);
-			mod.setHardTimeout((short)0);
-			mod.setPriority((short)(5566));//Short.MAX_VALUE - 1
-			mod.setBufferId(OFPacketOut.BUFFER_ID_NONE);
-			mod.setFlags((short)(1 << 0));
-	
-			String mac_10_0_0_1 = dvc.getMACAddressString();
-			List<OFAction> actions = new ArrayList<OFAction>();
-			actions.add(new OFActionDataLayerDestination(Ethernet.toMACAddress(mac_10_0_0_1)));
-			actions.add(new OFActionNetworkLayerDestination(IPv4.toIPv4Address("10.0.0.1")));
-			actions.add(new OFActionTransportLayerDestination((short)5134));
-			short first_DPID = route.getPath().get(1).getPortId();
-			actions.add(new OFActionOutput(first_DPID,(short)0xFFFF));
-	
-			mod.setActions(actions);
-			mod.setLengthU(OFFlowMod.MINIMUM_LENGTH 
-					+ OFActionNetworkLayerDestination.MINIMUM_LENGTH 
-					+ OFActionDataLayerDestination.MINIMUM_LENGTH
-					+ OFActionTransportLayerDestination.MINIMUM_LENGTH
-					+ OFActionOutput.MINIMUM_LENGTH);
-	
-			try {//set a rule  in the first switch for modifying the header
-				sw.write(mod, cntx); 
-				sw.flush(); 
-			} catch (IOException e) { 
-					e.printStackTrace(); 
-				} 
-			
-			OFMatch match2 = new OFMatch();
-			match2.setNetworkProtocol(IPv4.PROTOCOL_UDP);
-			match2.setDataLayerType(Ethernet.TYPE_IPv4);
-			match2.setTransportDestination((short)5134);
-			match2.setNetworkDestination(IPv4.toIPv4Address("10.0.0.1"));
-			match2.setWildcards(~(OFMatch.OFPFW_NW_PROTO
-					| OFMatch.OFPFW_DL_TYPE 
-					| OFMatch.OFPFW_TP_DST
-					| OFMatch.OFPFW_NW_DST_MASK)); 
-	
-			OFFlowMod mod2 = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
-			mod2.setMatch(match2);
-			mod2.setCommand(OFFlowMod.OFPFC_ADD);
-			mod2.setIdleTimeout((short)0);
-			mod2.setHardTimeout((short)0);
-			mod2.setPriority((short)(Short.MAX_VALUE - 1));
-			mod2.setBufferId(OFPacketOut.BUFFER_ID_NONE);
-			mod2.setFlags((short)(1 << 0));
-			mod2.setLengthU(OFFlowMod.MINIMUM_LENGTH 
-					+ OFActionOutput.MINIMUM_LENGTH);
-			
-			OFMatch match3 = new OFMatch();
-			match3.setNetworkProtocol(IPv4.PROTOCOL_UDP);
-			match3.setDataLayerType(Ethernet.TYPE_IPv4);
-			match3.setTransportDestination(match.getTransportSource());
-			match3.setNetworkDestination(match.getNetworkSource());
-			match3.setWildcards(~(OFMatch.OFPFW_NW_PROTO
-					| OFMatch.OFPFW_DL_TYPE 
-					| OFMatch.OFPFW_TP_DST
-					| OFMatch.OFPFW_NW_DST_MASK)); 
-	
-			OFFlowMod mod3 = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
-			mod3.setMatch(match3);
-			mod3.setCommand(OFFlowMod.OFPFC_ADD);
-			mod3.setIdleTimeout((short)0);
-			mod3.setHardTimeout((short)0);
-			mod3.setPriority((short)(Short.MAX_VALUE - 1));
-			mod3.setBufferId(OFPacketOut.BUFFER_ID_NONE);
-			mod3.setFlags((short)(1 << 0));
-			mod3.setLengthU(OFFlowMod.MINIMUM_LENGTH 
-					+ OFActionOutput.MINIMUM_LENGTH);
-			
-			List<OFAction> actions2 = new ArrayList<OFAction>();
-			List<OFAction> actions3 = new ArrayList<OFAction>();
-			List<OFMessage> messages = new ArrayList<OFMessage>();
-			int route_nodes =  route.getPath().size();
+		Iterator<? extends IDevice> dstiter = deviceManager.queryDevices(null, null, ipaddr, null, null);
+		IDevice dvc = null;
+		dvc = (IDevice) dstiter.next();
+		
+		IDevice srcDevice = IDeviceService.fcStore.get(cntx, IDeviceService.CONTEXT_SRC_DEVICE);
+	    //IDevice dstDevice = IDeviceService.fcStore.get(cntx, IDeviceService.CONTEXT_DST_DEVICE);
+	    SwitchPort[] srcDaps = srcDevice.getAttachmentPoints();
+	    SwitchPort[] dstDaps = dvc.getAttachmentPoints();//dstDevice.getAttachmentPoints();
+ 
+	    Route route = 
+	    		routingEngine.getRoute(srcDaps[0].getSwitchDPID(), (short)srcDaps[0].getPort(),
+	    				dstDaps[0].getSwitchDPID(), (short)dstDaps[0].getPort(), 0); 
+ 
+		match.setNetworkProtocol(IPv4.PROTOCOL_UDP);
+		match.setDataLayerType(Ethernet.TYPE_IPv4);
+		//match.setTransportSource(match.getTransportSource());
+		//match.setNetworkDestination(match.getNetworkDestination());
+		match.setNetworkSource(match.getNetworkSource());
+		match.setWildcards(~(OFMatch.OFPFW_NW_PROTO
+				| OFMatch.OFPFW_DL_TYPE 
+				//| OFMatch.OFPFW_TP_SRC 
+				//| OFMatch.OFPFW_NW_DST_MASK
+				| OFMatch.OFPFW_NW_SRC_MASK)); 
+ 
+		OFFlowMod mod = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
+	    mod.setMatch(match);
+		mod.setCommand(OFFlowMod.OFPFC_ADD);
+		mod.setIdleTimeout((short)0);
+		mod.setHardTimeout((short)0);
+		mod.setPriority((short)(5566));//Short.MAX_VALUE - 1
+		mod.setBufferId(OFPacketOut.BUFFER_ID_NONE);
+		mod.setFlags((short)(1 << 0));
+ 
+		String mac_10_0_0_1 = dvc.getMACAddressString();
+		List<OFAction> actions = new ArrayList<OFAction>();
+		actions.add(new OFActionDataLayerDestination(Ethernet.toMACAddress(mac_10_0_0_1)));
+		actions.add(new OFActionNetworkLayerDestination(IPv4.toIPv4Address("10.0.0.1")));
+		actions.add(new OFActionTransportLayerDestination((short)5134));
+		short first_DPID = route.getPath().get(1).getPortId();
+		actions.add(new OFActionOutput(first_DPID,(short)0xFFFF));
 
-			pushPacket(sw, match, pin, first_DPID, mac_10_0_0_1);//pkt_out the first pkt buffered in the first switch
-			return Command.STOP;
+		mod.setActions(actions);
+		mod.setLengthU(OFFlowMod.MINIMUM_LENGTH 
+                + OFActionNetworkLayerDestination.MINIMUM_LENGTH 
+                + OFActionDataLayerDestination.MINIMUM_LENGTH
+                + OFActionTransportLayerDestination.MINIMUM_LENGTH
+                + OFActionOutput.MINIMUM_LENGTH);
+ 
+		try {//set a rule  in the first switch for modifying the header
+            sw.write(mod, cntx); 
+            sw.flush(); 
+		} catch (IOException e) { 
+            	e.printStackTrace(); 
+			} 
+		
+		OFMatch match2 = new OFMatch();
+		match2.setNetworkProtocol(IPv4.PROTOCOL_UDP);
+		match2.setDataLayerType(Ethernet.TYPE_IPv4);
+		match2.setTransportDestination((short)5134);
+		match2.setNetworkDestination(IPv4.toIPv4Address("10.0.0.1"));
+		match2.setWildcards(~(OFMatch.OFPFW_NW_PROTO
+				| OFMatch.OFPFW_DL_TYPE 
+				| OFMatch.OFPFW_TP_DST
+                | OFMatch.OFPFW_NW_DST_MASK)); 
+ 
+		OFFlowMod mod2 = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
+		mod2.setMatch(match2);
+		mod2.setCommand(OFFlowMod.OFPFC_ADD);
+		mod2.setIdleTimeout((short)0);
+		mod2.setHardTimeout((short)0);
+		mod2.setPriority((short)(Short.MAX_VALUE - 1));
+		mod2.setBufferId(OFPacketOut.BUFFER_ID_NONE);
+		mod2.setFlags((short)(1 << 0));
+		mod2.setLengthU(OFFlowMod.MINIMUM_LENGTH 
+				+ OFActionOutput.MINIMUM_LENGTH);
+		
+		OFMatch match3 = new OFMatch();
+		match3.setNetworkProtocol(IPv4.PROTOCOL_UDP);
+		match3.setDataLayerType(Ethernet.TYPE_IPv4);
+		match3.setTransportDestination(match.getTransportSource());
+		match3.setNetworkDestination(match.getNetworkSource());
+		match3.setWildcards(~(OFMatch.OFPFW_NW_PROTO
+				| OFMatch.OFPFW_DL_TYPE 
+				| OFMatch.OFPFW_TP_DST
+                | OFMatch.OFPFW_NW_DST_MASK)); 
+ 
+		OFFlowMod mod3 = (OFFlowMod) floodlightProvider.getOFMessageFactory().getMessage(OFType.FLOW_MOD);
+		mod3.setMatch(match3);
+		mod3.setCommand(OFFlowMod.OFPFC_ADD);
+		mod3.setIdleTimeout((short)0);
+		mod3.setHardTimeout((short)0);
+		mod3.setPriority((short)(Short.MAX_VALUE - 1));
+		mod3.setBufferId(OFPacketOut.BUFFER_ID_NONE);
+		mod3.setFlags((short)(1 << 0));
+		mod3.setLengthU(OFFlowMod.MINIMUM_LENGTH 
+				+ OFActionOutput.MINIMUM_LENGTH);
+		
+		List<OFAction> actions2 = new ArrayList<OFAction>();
+		List<OFAction> actions3 = new ArrayList<OFAction>();
+		List<OFMessage> messages = new ArrayList<OFMessage>();
+		int route_nodes =  route.getPath().size();
+		
+		
+		try{
+			for(int k=0;k<route_nodes;k++) System.out.println(route_nodes+"======="+route.getPath().get(k).getNodeId()+"======="+route.getPath().get(k).getPortId());
+			
+			for(int m=1;m<route_nodes;m+=2)
+			{			
+		    	System.out.println("*******************start*******************");
+		    	/*short second_DPID = route.getPath().get(m).getPortId();
+				actions.remove(3);//remove 4th action (OFActionOutput)
+				actions.add(new OFActionOutput(second_DPID,(short)0xFFFF));
+				mod.setActions(actions);
+		    	//messages.add(mod);*/
+		    	
+		    	actions2.add(new OFActionOutput(route.getPath().get(m).getPortId(),(short)0xFFFF));
+		    	actions3.add(new OFActionOutput(route.getPath().get(m-1).getPortId(),(short)0xFFFF));
+				mod2.setActions(actions2);
+				mod3.setActions(actions3);
+				messages.add(mod2);
+				messages.add(mod3);
+				long dpid = route.getPath().get(m).getNodeId();
+				writeOFMessagesToSwitch(dpid, messages);	  
+ 
+				actions2.clear();
+				actions3.clear();
+				messages.clear();
+				System.out.println("*******************end*******************");
+			}
+		} catch (java.lang.NullPointerException e) { 
+			e.printStackTrace(); 
+			System.out.println("111111111111111111111111111111111111");
+		} 
+		pushPacket(sw, match, pin, first_DPID, mac_10_0_0_1);//pkt_out the first pkt buffered in the first switch
+		return Command.STOP;
 		}
  
 		return Command.CONTINUE;
@@ -283,6 +367,7 @@ public void writeOFMessagesToSwitch(long dpid, List<OFMessage> messages) {
         }
 
     }
+
 private void pushPacket(IOFSwitch sw, OFMatch match, OFPacketIn pi, short outport, String mac_10_0_0_1) {
     if (pi == null) {
         return;
