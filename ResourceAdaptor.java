@@ -1,3 +1,5 @@
+package net.floodlightcontroller.headerextract;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -52,12 +54,12 @@ public class ResourceAdaptor {
 	    catch(ClassNotFoundException e) 
 	    { 
 	      System.out.println("DriverClassNotFound :"+e.toString()); 
+	      Close_connection();
 	    }//有可能會產生sqlexception 
 	    catch(SQLException x) { 
-	      System.out.println("Exception :"+x.toString()); 
+	      System.out.println("Exception :"+x.toString()+", Omit this pkt_in!"); 
+	      Close_connection();
 	    } 
-	    System.out.println("SUCCESSFUL CONNECTION!!");
-
 	  } 
 	  //建立table的方式 
 	  //可以看看Statement的使用方式 
@@ -80,7 +82,7 @@ public class ResourceAdaptor {
 	  //新增資料 
 	  //可以看看PrepareStatement的使用方式 
 	  public void insertTable(int Association_ID, String uid, short in_port, long sw_dpid, String src_mac, String dst_mac, String src_ip, String dst_ip, 
-			  short src_port, short dst_port, byte protocol, java.sql.Timestamp time) 
+			  int src_port, int dst_port, byte protocol, java.sql.Timestamp time) 
 	  { 
 	    try 
 	    { 
@@ -93,8 +95,8 @@ public class ResourceAdaptor {
 	      pst.setString(6, dst_mac);
 	      pst.setString(7, src_ip);
 	      pst.setString(8, dst_ip);
-	      pst.setShort(9, src_port);
-	      pst.setShort(10, dst_port);
+	      pst.setInt(9, src_port);
+	      pst.setInt(10, dst_port);
 	      pst.setByte(11, protocol);
 	      pst.setTimestamp(12, time);
 	      
@@ -156,13 +158,13 @@ public class ResourceAdaptor {
 	    	  meatadata[5] = rs.getString("dst_mac");
 	    	  meatadata[6] = rs.getString("src_ip");
 	    	  meatadata[7] = rs.getString("dst_ip");
-	    	  meatadata[8] = rs.getShort("src_port");
-	    	  meatadata[9] = rs.getShort("dst_port");
+	    	  meatadata[8] = rs.getInt("src_port");
+	    	  meatadata[9] = rs.getInt("dst_port");
 	    	  meatadata[10] = rs.getByte("protocol");
 	    	  meatadata[11] = rs.getTimestamp("time");
 	    	  //System.out.println(rs.getInt("Association_ID")+"\t"+rs.getString("uid")+"\t"+rs.getShort("in_port")
 	    			  //+"\t"+rs.getLong("sw_dpid")+"\t"+rs.getString("src_mac")+"\t"+rs.getString("dst_mac")
-	    			  //+"\t"+rs.getString("src_ip")+"\t"+rs.getString("dst_ip")+"\t"+rs.getShort("src_port")+"\t"+rs.getShort("dst_port")
+	    			  //+"\t"+rs.getString("src_ip")+"\t"+rs.getString("dst_ip")+"\t"+rs.getInt("src_port")+"\t"+rs.getInt("dst_port")
 	    			  //+"\t"+rs.getByte("protocol")+"\t"+rs.getTimestamp("time"));
 	      }
 	    } 
@@ -203,7 +205,24 @@ public class ResourceAdaptor {
 	      System.out.println("Close Exception :" + e.toString()); 
 	    } 
 	  } 
-
+	  private void Close_connection()
+	  {
+		  if(con!=null) 
+	      { 
+			try {
+				con.close();
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+	        con = null; 
+	      }
+	  }
+	  public boolean getConState()
+	  {
+		  if(con!=null) return false;
+		  else return true;
+	  }
 	/*public static void main(String[] args) 
 	  { 
 	      //測看看是否正常 
@@ -222,6 +241,6 @@ public class ResourceAdaptor {
 		  //test.dropTable();
 		  //test.createTable();//no use
 		  test.SelectTable(selectSQL);
-		  //test.insertTable((int)7788, "Alex", (short)3, (long)15, "10:00:00:00:00:02", "10:00:00:00:00:03", "140.113.215.4", "8.8.8.8", (short)17, (short)6, (byte)4, sqlTimestamp);
+		  //test.insertTable((int)7788, "Alex", (short)3, (long)15, "10:00:00:00:00:02", "10:00:00:00:00:03", "140.113.215.4", "8.8.8.8", (int)17, (int)6, (byte)4, sqlTimestamp);
 	  }*/ 
 }
