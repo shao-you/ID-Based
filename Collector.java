@@ -1,28 +1,14 @@
 package net.floodlightcontroller.headerextract;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
- 
-import org.openflow.protocol.OFFlowMod;
+
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFPacketIn;
-import org.openflow.protocol.OFPacketOut;
-import org.openflow.protocol.OFPort;
 import org.openflow.protocol.OFType;
-import org.openflow.protocol.action.OFAction;
-import org.openflow.protocol.action.OFActionDataLayerDestination;
-import org.openflow.protocol.action.OFActionNetworkLayerDestination;
-import org.openflow.protocol.action.OFActionOutput;
-import org.openflow.protocol.action.OFActionTransportLayerDestination;
 import org.openflow.util.HexString;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
@@ -43,26 +29,16 @@ import net.floodlightcontroller.devicemanager.SwitchPort;
 import net.floodlightcontroller.learningswitch.LearningSwitch;
 import net.floodlightcontroller.packet.Ethernet;
 import net.floodlightcontroller.packet.IPv4;
-import net.floodlightcontroller.routing.Route;
-import net.floodlightcontroller.staticflowentry.IStaticFlowEntryPusherService;
 import net.floodlightcontroller.topology.ITopologyService;
-import net.floodlightcontroller.util.OFMessageDamper;
-import java.util.Date;
-import java.sql.*;
-import java.net.*;
-import com.mysql.jdbc.exceptions.jdbc4.MySQLNonTransientConnectionException;
+
 
 public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
  
 	public final int DEFAULT_CACHE_SIZE = 10;
 	protected IFloodlightProviderService floodlightProvider;
-	protected ICounterStoreService counterStore;
-    protected OFMessageDamper messageDamper;
-	protected IDeviceService deviceManager;
-	private IStaticFlowEntryPusherService staticFlowEntryPusher;
-	private IRoutingService routingEngine;
+
 	protected static Logger log = LoggerFactory.getLogger(LearningSwitch.class);
- 
+	ResourceAdaptor DB_manipulate;
  
 	@Override
 	public String getName() {
@@ -111,14 +87,7 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 	@Override
 	public void init(FloodlightModuleContext context)
 			throws FloodlightModuleException {
-		floodlightProvider =
-                context.getServiceImpl(IFloodlightProviderService.class);
-				this.deviceManager = context.getServiceImpl(IDeviceService.class);
-				this.routingEngine = context.getServiceImpl(IRoutingService.class);
-		        this.counterStore = context.getServiceImpl(ICounterStoreService.class);
-		        messageDamper = new OFMessageDamper(10000,
-                        EnumSet.of(OFType.FLOW_MOD),
-                        250);
+		floodlightProvider = context.getServiceImpl(IFloodlightProviderService.class);
 		// TODO Auto-generated method stub
  
 	}
@@ -126,13 +95,14 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 	@Override
 	public void startUp(FloodlightModuleContext context)
 			throws FloodlightModuleException {
-		floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);
+		floodlightProvider.addOFMessageListener(OFType.PACKET_IN, this);//註冊成為其他Service的Listener
+		DB_manipulate = new ResourceAdaptor();
 		// TODO Auto-generated method stub
 	}
  
 	@Override
-	public net.floodlightcontroller.core.IListener.Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) {
-
+	public net.floodlightcontroller.core.IListener.Command receive(IOFSwitch sw, OFMessage msg, FloodlightContext cntx) 
+	{
 		java.util.Date current_time = new java.util.Date(); 
 		long t = current_time.getTime();
 		
@@ -160,74 +130,74 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 		if(match.getDataLayerType() == (short)0x0800 && //IPv4, floodlight not support IPv6
 				!(src_port==68 && dst_port==67 && protocol==17)) //not DHCP
 		{
-		switch (msg.getType()) {
-        case PACKET_IN:
-
-		time = new java.sql.Timestamp(t);
-		IDevice srcDevice = IDeviceService.fcStore.get(cntx, IDeviceService.CONTEXT_SRC_DEVICE);
-	    SwitchPort[] srcDaps = srcDevice.getAttachmentPoints();//Get all unique attachment points associated with the device.
-	    if(srcDaps.length==0) System.out.println("=========================");
-	    else in_port = (short)srcDaps[0].getPort();
-	    sw_dpid = srcDaps[0].getSwitchDPID();
-	    /*int iSrcDaps = 0, iDstDaps = 0;
-        while ((iSrcDaps < srcDaps.length) && (iDstDaps < dstDaps.length)) {
-                SwitchPort srcDap = srcDaps[iSrcDaps];
-                SwitchPort dstDap = dstDaps[iDstDaps];
-        }*/
+			switch (msg.getType()) 
+			{
+	        	case PACKET_IN:
 		
-		Long src_mac_long = Ethernet.toLong(match.getDataLayerSource());
-		Long dst_mac_long = Ethernet.toLong(match.getDataLayerDestination());
-		src_mac = HexString.toHexString(src_mac_long);
-		dst_mac = HexString.toHexString(dst_mac_long);
-		//src_mac = match.getDataLayerSource().toString();
-		//dst_mac = match.getDataLayerDestination().toString();
+				time = new java.sql.Timestamp(t);
+				IDevice srcDevice = IDeviceService.fcStore.get(cntx, IDeviceService.CONTEXT_SRC_DEVICE);
+			    SwitchPort[] srcDaps = srcDevice.getAttachmentPoints();//Get all unique attachment points associated with the device.
+			    if(srcDaps.length==0) System.out.println("=========================");
+			    else in_port = (short)srcDaps[0].getPort();
+			    sw_dpid = srcDaps[0].getSwitchDPID();
+			    /*int iSrcDaps = 0, iDstDaps = 0;
+		        while ((iSrcDaps < srcDaps.length) && (iDstDaps < dstDaps.length)) {
+		                SwitchPort srcDap = srcDaps[iSrcDaps];
+		                SwitchPort dstDap = dstDaps[iDstDaps];
+		        }*/
+				
+				Long src_mac_long = Ethernet.toLong(match.getDataLayerSource());
+				Long dst_mac_long = Ethernet.toLong(match.getDataLayerDestination());
+				src_mac = HexString.toHexString(src_mac_long);
+				dst_mac = HexString.toHexString(dst_mac_long);
+				//src_mac = match.getDataLayerSource().toString();
+				//dst_mac = match.getDataLayerDestination().toString();
+				
+				src_ip = IPv4.fromIPv4Address(match.getNetworkSource());//String<-->int, IPv4.fromIPv4Address(), IPv4.toIPv4Address()
+				dst_ip = IPv4.fromIPv4Address(match.getNetworkDestination());
 		
-		src_ip = IPv4.fromIPv4Address(match.getNetworkSource());//String<-->int, IPv4.fromIPv4Address(), IPv4.toIPv4Address()
-		dst_ip = IPv4.fromIPv4Address(match.getNetworkDestination());
-
-		//=============================================================
-		ResourceAdaptor DB_manipulate = new ResourceAdaptor();
-		if(DB_manipulate.getConState()) return Command.CONTINUE;
-		else System.out.println("SUCCESSFUL CONNECTION!!");
-		
-		String latest_record = "SELECT * FROM `Association` where `src_mac`='"+ src_mac +"' ORDER BY `time` DESC LIMIT 1";//for `uid`
-		String mac_idle_pass = "SELECT * FROM `Registered_mac` where `src_mac`='"+ src_mac +"'";//for `pass`
-		
-		//query Association table by scr_mac, and find the latest record, and copy uid into new record 
-		
-		Object [] result = DB_manipulate.SelectTable(latest_record);
-			
-		if(result[1] == null || result[1] == "") ;//not auth
-		else uid = (String)result[1];
-		
-		String total_fields = uid + Short.toString(in_port) + Long.toString(sw_dpid) + src_mac + dst_mac + 
-				src_ip + dst_ip + Integer.toString(src_port) + Integer.toString(dst_port) + Byte.toString(protocol) + time.toString() +
-				Integer.toString(new Random().nextInt());
-		
-		Association_ID = total_fields.hashCode();//define an unique index
-		DB_manipulate.insertTable(Association_ID, uid, in_port, sw_dpid, src_mac, dst_mac, src_ip, dst_ip, src_port, dst_port, protocol, time);
-		
-		System.out.println(Association_ID+"  "+uid+"  "+in_port+"  "+sw_dpid+"  "+src_mac+"  "+dst_mac+"  "+src_ip+"  "+dst_ip+"  "+src_port+"  "+dst_port+"  "+protocol+"  "+time);
-		//query Registered_mac table to check idle/pass of src_mac
-		/*result = DB_manipulate.SelectTable(mac_idle_pass);
-		if(result[0] == null || (int)result[3] == 0) ;//not auth
-		else if((int)result[3] == 1)//deliver Association_ID of new record to Dispatcher
-		{
-			new SocketClient(Association_ID);
-		}*/
-		//=============================================================
-		//=============================================================
-		//=============================================================
-		/*Long sourceMACHash = Ethernet.toLong(match.getDataLayerDestination());
-		System.out.println("$$$$$-Get the Destination IP Address-$$$$$"); 
-		System.out.println(IPv4.fromIPv4Address(match.getNetworkDestination()));
-		System.out.println("$$$$$-Mac Address Destination-$$$$$$");
-		System.out.println(HexString.toHexString(sourceMACHash));*/
-		
-        default:
-            break;
-    }
-	}
+				//=============================================================
+				if(DB_manipulate.getConState()) {System.out.println("FAILED CONNECTION!!");return Command.CONTINUE;}
+				else System.out.println("SUCCESSFUL CONNECTION!!");
+				
+				String latest_record = "SELECT * FROM `Association` where `src_mac`='"+ src_mac +"' ORDER BY `time` DESC LIMIT 1";//for `uid`
+				String mac_idle_pass = "SELECT * FROM `Registered_mac` where `src_mac`='"+ src_mac +"'";//for `pass`
+				
+				//query Association table by scr_mac, and find the latest record, and copy uid into new record 
+				
+				Object [] result = DB_manipulate.SelectTable(latest_record);
+					
+				if(result[1] == null || result[1] == "") ;//not auth
+				else uid = (String)result[1];
+				
+				String total_fields = uid + Short.toString(in_port) + Long.toString(sw_dpid) + src_mac + dst_mac + 
+						src_ip + dst_ip + Integer.toString(src_port) + Integer.toString(dst_port) + Byte.toString(protocol) + time.toString() +
+						Integer.toString(new Random().nextInt());
+				
+				Association_ID = total_fields.hashCode();//define an unique index
+				DB_manipulate.insertTable(Association_ID, uid, in_port, sw_dpid, src_mac, dst_mac, src_ip, dst_ip, src_port, dst_port, protocol, time);
+				
+				System.out.println(Association_ID+"  "+uid+"  "+in_port+"  "+sw_dpid+"  "+src_mac+"  "+dst_mac+"  "+src_ip+"  "+dst_ip+"  "+src_port+"  "+dst_port+"  "+protocol+"  "+time);
+				//query Registered_mac table to check idle/pass of src_mac
+				/*result = DB_manipulate.SelectTable(mac_idle_pass);
+				if(result[0] == null || (int)result[3] == 0) ;//not auth
+				else if((int)result[3] == 1)//deliver Association_ID of new record to Dispatcher
+				{
+					new SocketClient(Association_ID);
+				}*/
+				//=============================================================
+				//=============================================================
+				//=============================================================
+				/*Long sourceMACHash = Ethernet.toLong(match.getDataLayerDestination());
+				System.out.println("$$$$$-Get the Destination IP Address-$$$$$"); 
+				System.out.println(IPv4.fromIPv4Address(match.getNetworkDestination()));
+				System.out.println("$$$$$-Mac Address Destination-$$$$$$");
+				System.out.println(HexString.toHexString(sourceMACHash));*/
+				
+		        default:
+		            break;
+			}
+		}
 		return Command.CONTINUE;
 		//return Command.STOP;
 	}
