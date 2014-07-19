@@ -4,9 +4,17 @@ import java.sql.SQLException;
 import java.util.Scanner;
 
 public class Main {//main function of ID-Based Management System
-    public static void main(String[] args) throws SQLException {
-    	
-    	  new Dispatcher();
+	
+	public static void main(String[] args) throws SQLException {
+		  int number_of_policy_engine = 1;
+		  Dispatcher dispatcher = new Dispatcher(number_of_policy_engine);
+		  Location_time_aware p1 = new Location_time_aware(dispatcher);//register to dispatcher
+		  //p2, p3...
+		  
+		  new SocketServer(dispatcher).start();//thread-enabled server
+		  
+		  
+		  
     	  //測看看是否正常 
 		  /*java.util.Date date = new java.util.Date();
 	      long t = date.getTime();
