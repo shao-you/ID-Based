@@ -2,8 +2,13 @@ package net.floodlightcontroller.headerextract;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
@@ -175,16 +180,33 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 						Integer.toString(new Random().nextInt());
 				
 				Association_ID = total_fields.hashCode();//define an unique index
-				DB_manipulate.insertTable(Association_ID, uid, in_port, sw_dpid, src_mac, dst_mac, src_ip, dst_ip, src_port, dst_port, protocol, time);
+				//DB_manipulate.insertTable(Association_ID, uid, in_port, sw_dpid, src_mac, dst_mac, src_ip, dst_ip, src_port, dst_port, protocol, time);
 				
 				System.out.println(Association_ID+"  "+uid+"  "+in_port+"  "+sw_dpid+"  "+src_mac+"  "+dst_mac+"  "+src_ip+"  "+dst_ip+"  "+src_port+"  "+dst_port+"  "+protocol+"  "+time);
 				//query Registered_mac table to check idle/pass of src_mac
 				/*result = DB_manipulate.SelectTable(mac_idle_pass);
 				if(result[0] == null || (int)result[3] == 0) ;//not auth
-				else if((int)result[3] == 1)//deliver Association_ID of new record to Dispatcher
+				else if((int)result[3] == 1)//deliver Association_ID of new record to Dispatcher*/
 				{
-					new SocketClient(Association_ID);
-				}*/
+					//Asso_record record = new Asso_record(Association_ID, uid, in_port, sw_dpid, src_mac, dst_mac, src_ip, dst_ip, src_port, dst_port, protocol, time);
+					Map map = new HashMap();
+					map.put("Association_ID", Association_ID);
+					map.put("uid", uid);
+					map.put("in_port", in_port);
+					map.put("sw_dpid", sw_dpid);
+					map.put("src_mac", src_mac);
+					map.put("dst_mac", dst_mac);
+					map.put("src_ip", src_ip);
+					map.put("dst_ip", dst_ip);
+					map.put("src_port", src_port);
+					map.put("dst_port", dst_port);
+					map.put("protocol", protocol);
+					map.put("time", time);
+					JSONObject record_json=null;
+					record_json = new JSONObject(map);
+					System.out.println(record_json);
+					new SocketClient(record_json);
+				}
 				//=============================================================
 				//=============================================================
 				//=============================================================
