@@ -1,34 +1,27 @@
 import org.json.JSONObject;
 
-public class Dispatcher {
-	int number_of_policy_engine;
-	int [][] array;
-	int index = 0;
-	final int record_field = 12;
-	Callback [] callback;
+public class Dispatcher implements Runnable{
+	Boolean forwarding_or_not;
+	JSONObject record_json;
+	Register register;
 	
-	public Dispatcher(int num)
+	public Dispatcher(JSONObject record_json, Register register)
 	{
-		number_of_policy_engine = num;
-		array = new int [num][record_field];
-		System.out.println("--------------1---------------");
+		this.forwarding_or_not = true;
+		this.record_json = record_json;
+		this.register = register;
 	}
-	public void Register_related_ID(Callback callback, int [] register_index)//store the registered info.
-	{  
-        for(int i=0;i<record_field;i++) array[index][i] = register_index[i];
-		this.callback[index] = callback;
-		index++;
-	}
-	public void trigger(JSONObject record_json)//do the checking & trigger policy engines
+	public Boolean forwarding_or_not()
 	{
-        new Thread(new Runnable() {  
-            @Override  
-            public void run() {  
-            	
-            	int [] triggered_policy_engine = new int [5];//the number depends on the checking results
-        		for(int i=0;i<triggered_policy_engine.length;i++) callback[i].policy_action("");//notice policy engine to take actions
-            }  
-        }).start();  
-        System.out.println("--------------2---------------");
+		return forwarding_or_not;
+	}
+	@Override  
+    public void run() //reference register to trigger related policy engines
+	{
+		//this.register  
+		//this.record_json
+		int [] triggered_policy_engine = new int [5];//the number depends on the checking results
+        //for(int i=0;i<triggered_policy_engine.length;i++) callback[i].policy_action("-------------");//notice policy engine to take actions
+        forwarding_or_not = register.callback[0].policy_action(record_json.toString());
 	}
 }
