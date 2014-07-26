@@ -1,3 +1,6 @@
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -5,15 +8,33 @@ import java.util.Scanner;
 
 public class Main {//main function of ID-Based Management System
 	
-	public static void main(String[] args) throws SQLException {
+	public static void main(String[] args) throws SQLException, IOException {
 		  int number_of_policy_engine = 1;
-		  Dispatcher dispatcher = new Dispatcher(number_of_policy_engine);
-		  Location_time_aware p1 = new Location_time_aware(dispatcher);//register to dispatcher
+		  Register register = new Register(number_of_policy_engine);
+		  //Dispatcher dispatcher = new Dispatcher();
+		  Location_time_aware p1 = new Location_time_aware();//register to dispatcher
+		  p1.register_IDs(register);
 		  //p2, p3...
 		  
-		  new SocketServer(dispatcher).start();//thread-enabled server
+		  final int ServerPort = 8765;
+		  ServerSocket server = new ServerSocket(ServerPort);
 		  
-		  
+		  while (true) {
+			  Socket s=null;
+			  synchronized (server) {
+				  s = server.accept();
+              }
+	            Thread newServer = new SocketServer(register, s);
+	            newServer.start();//thread-enabled server
+	            
+	            /*try {
+					newServer.join();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}*/
+	       }
+		  //server.close();//unreachable
 		  
     	  //測看看是否正常 
 		  /*java.util.Date date = new java.util.Date();
