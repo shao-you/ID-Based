@@ -1,6 +1,9 @@
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.ObjectInputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import org.json.JSONArray;
@@ -8,69 +11,75 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class SocketServer extends java.lang.Thread {
- 
-    private boolean OutServer = false;
-    private ServerSocket server;
-    private final int ServerPort = 8765;// 要監控的port
-    Dispatcher dispatcher;
+    Register register;
+    Socket socket;
     
-    public SocketServer(Dispatcher dispatcher) {
-        try {
-            server = new ServerSocket(ServerPort);
-            this.dispatcher = dispatcher;
- 
-        } catch (java.io.IOException e) {
-            System.out.println("Socket啟動有問題 !");
-            System.out.println("IOException :" + e.toString());
-        }
+    public SocketServer(Register register, Socket socket) {
+            this.register = register;
+            this.socket = socket;
     }
  
     public void run() {
-        Socket socket;
-        //java.io.ObjectInputStream in ;//receive object
-        java.io.BufferedInputStream in;//receive string
- 
-        System.out.println("伺服器已啟動 !");
-        while (!OutServer) {
-            socket = null;
+        	System.out.println("伺服器已啟動 !");     
+        	
             try {
-                synchronized (server) {
-                    socket = server.accept();
-                }
-                System.out.println("取得連線 : InetAddress = "
-                        + socket.getInetAddress().getHostAddress());
+                System.out.println("取得連線 : InetAddress = " + socket.getInetAddress().getHostAddress());
                 // TimeOut時間
                 socket.setSoTimeout(15000);
  
-                /*in = new java.io.ObjectInputStream(socket.getInputStream());
+                /*ObjectInputStream in = new ObjectInputStream(socket.getInputStream());//receive object
                 Asso_record record = (Asso_record) in.readObject();//restore to JSON format, class Asso_record位置(package): 送端要等於收端
                 record.Printout_record();*/
-                
-                in = new java.io.BufferedInputStream(socket.getInputStream());
+               
+                /*BufferedInputStream in = new BufferedInputStream(socket.getInputStream());//receive string
                 byte[] b = new byte[1024];
-                
                 String data = "";
                 int length;
                 while ((length = in.read(b)) > 0)// <=0的話就是結束了
                 {
                     data += new String(b, 0, length);
                 }
+                //in.close();
+                //in = null;*/
+               
+                DataInputStream in = new DataInputStream(socket.getInputStream());
+                String data = in.readUTF();
                 JSONObject record_json = new JSONObject(data);
-                System.out.println(record_json);
-                //System.out.println("我取得的值:" + data);
-                this.dispatcher.trigger(record_json);
+                //System.out.println(record_json);
+                //System.out.println("Client：" + data);
+                Dispatcher newdispatcher = new Dispatcher(record_json, register);
+                Thread newThread = new Thread(newdispatcher);
+                newThread.start();
+                try {
+					newThread.join();//will wait for the upper layer to complete
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
                 
+                /*BufferedOutputStream out = new BufferedOutputStream(socket.getOutputStream());System.out.println("=====================================================");
+                // 送出字串
+                String msg = "Action complete!!";
+                out.write(msg.getBytes());
+                out.flush();
+                //out.close();
+                //out = null;*/
+                
+                DataOutputStream out = new DataOutputStream(socket.getOutputStream());
+                String result = newdispatcher.forwarding_or_not().toString();
+                System.out.println("==="+result+"===");
+				out.writeUTF(result);
+				out.flush();
+
                 //String record_of_Association_ID = "SELECT * FROM `Association` where `Association_ID`='"+ data +"'";
                 //ResourceAdaptor DB_manipulate = new ResourceAdaptor();
-                //Object [] result = DB_manipulate.SelectTable(record_of_Association_ID);
-                
+                //Object [] result = DB_manipulate.SelectTable(record_of_Association_ID);  
                 
                 //do some simple handling of IDs (notification, classification, register/publish...)
-                
-                in.close();
-                in = null;
+
                 socket.close();
- 
+                socket = null;
+                
             } catch (java.io.IOException e) {
                 System.out.println("Socket連線有問題 !");
                 System.out.println("IOException :" + e.toString());
@@ -78,8 +87,6 @@ public class SocketServer extends java.lang.Thread {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
- 
-        }
     }
  
     /*public static void main(String args[]) {
