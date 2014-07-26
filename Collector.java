@@ -203,7 +203,7 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 				/*result = DB_manipulate.SelectTable(mac_idle_pass);
 				if(result[0] == null || (int)result[3] == 0) ;//not auth
 				else if((int)result[3] == 1)//deliver Association_ID of new record to Dispatcher*/
-				{
+				//{
 					//Asso_record record = new Asso_record(Association_ID, uid, in_port, sw_dpid, src_mac, dst_mac, src_ip, dst_ip, src_port, dst_port, protocol, time);
 					Map map = new HashMap();
 					map.put("Association_ID", Association_ID);
@@ -223,15 +223,15 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 					System.out.println(record_json);
 					SocketClient client = new SocketClient();
 					client.connect_server(record_json);//will wait for the upper layer to complete
-					
-				}
+				//}
 				
 				Route route = 
 						routingEngine.getRoute(srcDaps[0].getSwitchDPID(), (short)srcDaps[0].getPort(),
 								dstDaps[0].getSwitchDPID(), (short)dstDaps[0].getPort(), 0); 
 				short first_DPID_port = route.getPath().get(1).getPortId();
 				//pushPacket(sw, match, pin, first_DPID_port);//pkt_out the first pkt buffered in the first switch
-				//return Command.STOP;//policy engine阻擋, 否則交由forwarding
+				
+				if(client.forwarding_or_not() == false) return Command.STOP;//policy engine阻擋, 否則交由forwarding
 				//=============================================================
 				/*Long sourceMACHash = Ethernet.toLong(match.getDataLayerDestination());
 				System.out.println("$$$$$-Get the Destination IP Address-$$$$$"); 
