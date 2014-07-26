@@ -1,5 +1,3 @@
-package net.floodlightcontroller.headerextract;
-
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -166,6 +164,7 @@ public class ResourceAdaptor {
 	    			  //+"\t"+rs.getLong("sw_dpid")+"\t"+rs.getString("src_mac")+"\t"+rs.getString("dst_mac")
 	    			  //+"\t"+rs.getString("src_ip")+"\t"+rs.getString("dst_ip")+"\t"+rs.getInt("src_port")+"\t"+rs.getInt("dst_port")
 	    			  //+"\t"+rs.getByte("protocol")+"\t"+rs.getTimestamp("time"));
+	      break;
 	      }
 	    } 
 	    catch(SQLException e) 
