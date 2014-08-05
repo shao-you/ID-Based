@@ -12,13 +12,14 @@ public class Main {//main function of ID-Based Management System
 		  int number_of_policy_engine = 1;
 		  int record_field_num = 12;
 		  Register register = new Register(number_of_policy_engine, record_field_num);
-		  //Dispatcher dispatcher = new Dispatcher();
-		  Location_time_aware p1 = new Location_time_aware();//register to dispatcher
-		  p1.register_IDs(register);
+
+		  Location_time_aware p1 = new Location_time_aware();
+		  p1.register_IDs(register);//register to dispatcher
 		  //p2, p3...
 		  
 		  final int ServerPort = 8765;
 		  ServerSocket server = new ServerSocket(ServerPort);
+		  System.out.println("***Welcome to the ID-Based Management System***");
 		  
 		  while (true) {
 			  Socket s=null;
