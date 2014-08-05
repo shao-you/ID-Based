@@ -10,7 +10,8 @@ public class Main {//main function of ID-Based Management System
 	
 	public static void main(String[] args) throws SQLException, IOException {
 		  int number_of_policy_engine = 1;
-		  Register register = new Register(number_of_policy_engine);
+		  int record_field_num = 12;
+		  Register register = new Register(number_of_policy_engine, record_field_num);
 		  //Dispatcher dispatcher = new Dispatcher();
 		  Location_time_aware p1 = new Location_time_aware();//register to dispatcher
 		  p1.register_IDs(register);
