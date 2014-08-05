@@ -25,7 +25,8 @@ import org.openflow.protocol.action.OFActionTransportLayerDestination;
 import org.openflow.util.HexString;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
- 
+
+import net.floodlightcontroller.util.MACAddress; 
 import net.floodlightcontroller.routing.IRoutingService;
 import net.floodlightcontroller.routing.Route;
 import net.floodlightcontroller.core.FloodlightContext;
@@ -122,11 +123,11 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 	{
 		java.util.Date current_time = new java.util.Date(); 
 		long t = current_time.getTime();
-		
+
 		int Association_ID;
 		String uid = "";//default is empty
 		short in_port=0;//
-		long sw_dpid=0;//
+		String sw_dpid;
 		String src_mac;
 		String dst_mac;
 		String src_ip;
@@ -159,19 +160,23 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 			    
 			    if(srcDaps.length==0) System.out.println("=========================");
 			    else in_port = (short)srcDaps[0].getPort();
-			    sw_dpid = srcDaps[0].getSwitchDPID();
-			    /*int iSrcDaps = 0, iDstDaps = 0;
+			    /*sw_dpid = srcDaps[0].getSwitchDPID();
+			    int iSrcDaps = 0, iDstDaps = 0;
 		        while ((iSrcDaps < srcDaps.length) && (iDstDaps < dstDaps.length)) {
 		                SwitchPort srcDap = srcDaps[iSrcDaps];
 		                SwitchPort dstDap = dstDaps[iDstDaps];
 		        }*/
-				
-				Long src_mac_long = Ethernet.toLong(match.getDataLayerSource());
+			    sw_dpid = sw.getStringId();
+			    MACAddress src_mac_ = new MACAddress(match.getDataLayerSource());
+			    MACAddress dst_mac_ = new MACAddress(match.getDataLayerDestination());
+			    src_mac = src_mac_.toString();
+			    dst_mac = dst_mac_.toString();
+				/*Long src_mac_long = Ethernet.toLong(match.getDataLayerSource());
 				Long dst_mac_long = Ethernet.toLong(match.getDataLayerDestination());
 				src_mac = HexString.toHexString(src_mac_long);
 				dst_mac = HexString.toHexString(dst_mac_long);
 				//src_mac = match.getDataLayerSource().toString();
-				//dst_mac = match.getDataLayerDestination().toString();
+				//dst_mac = match.getDataLayerDestination().toString();*/
 				
 				src_ip = IPv4.fromIPv4Address(match.getNetworkSource());//String<-->int, IPv4.fromIPv4Address(), IPv4.toIPv4Address()
 				dst_ip = IPv4.fromIPv4Address(match.getNetworkDestination());
@@ -191,7 +196,7 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 				if(result[1] == null || result[1] == "") ;//not auth
 				else uid = (String)result[1];
 				
-				String total_fields = uid + Short.toString(in_port) + Long.toString(sw_dpid) + src_mac + dst_mac + 
+				String total_fields = uid + Short.toString(in_port) + sw_dpid + src_mac + dst_mac + 
 						src_ip + dst_ip + Integer.toString(src_port) + Integer.toString(dst_port) + Byte.toString(protocol) + time.toString() +
 						Integer.toString(new Random().nextInt());
 				
@@ -224,20 +229,13 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 					SocketClient client = new SocketClient();
 					client.connect_server(record_json);//will wait for the upper layer to complete
 				//}
-				
+
 				Route route = 
 						routingEngine.getRoute(srcDaps[0].getSwitchDPID(), (short)srcDaps[0].getPort(),
 								dstDaps[0].getSwitchDPID(), (short)dstDaps[0].getPort(), 0); 
 				short first_DPID_port = route.getPath().get(1).getPortId();
-				//pushPacket(sw, match, pin, first_DPID_port);//pkt_out the first pkt buffered in the first switch
-				
-				if(client.forwarding_or_not() == false) return Command.STOP;//policy engine阻擋, 否則交由forwarding
-				//=============================================================
-				/*Long sourceMACHash = Ethernet.toLong(match.getDataLayerDestination());
-				System.out.println("$$$$$-Get the Destination IP Address-$$$$$"); 
-				System.out.println(IPv4.fromIPv4Address(match.getNetworkDestination()));
-				System.out.println("$$$$$-Mac Address Destination-$$$$$$");
-				System.out.println(HexString.toHexString(sourceMACHash));*/
+			//pushPacket(sw, match, pin, first_DPID_port);//pkt_out the first pkt buffered in the first switch
+			//if(client.forwarding_or_not() == false) return Command.STOP;//policy engine阻擋, 否則交由forwarding
 				
 		        default:
 		            break;
