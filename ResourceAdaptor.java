@@ -81,7 +81,7 @@ public class ResourceAdaptor {
 	  } 
 	  //新增資料 
 	  //可以看看PrepareStatement的使用方式 
-	  public void insertTable(int Association_ID, String uid, short in_port, long sw_dpid, String src_mac, String dst_mac, String src_ip, String dst_ip, 
+	  public void insertTable(int Association_ID, String uid, short in_port, String sw_dpid, String src_mac, String dst_mac, String src_ip, String dst_ip, 
 			  int src_port, int dst_port, byte protocol, java.sql.Timestamp time) 
 	  { 
 	    try 
@@ -90,7 +90,7 @@ public class ResourceAdaptor {
 	      pst.setInt(1, Association_ID);
 	      pst.setString(2, uid);
 	      pst.setShort(3, in_port);
-	      pst.setLong(4, sw_dpid);
+	      pst.setString(4, sw_dpid);
 	      pst.setString(5, src_mac);
 	      pst.setString(6, dst_mac);
 	      pst.setString(7, src_ip);
@@ -153,7 +153,7 @@ public class ResourceAdaptor {
 	    	  meatadata[0] = rs.getInt("Association_ID");
 	    	  meatadata[1] = rs.getString("uid");
 	    	  meatadata[2] = rs.getShort("in_port");
-	    	  meatadata[3] = rs.getLong("sw_dpid");
+	    	  meatadata[3] = rs.getString("sw_dpid");
 	    	  meatadata[4] = rs.getString("src_mac");
 	    	  meatadata[5] = rs.getString("dst_mac");
 	    	  meatadata[6] = rs.getString("src_ip");
@@ -163,7 +163,7 @@ public class ResourceAdaptor {
 	    	  meatadata[10] = rs.getByte("protocol");
 	    	  meatadata[11] = rs.getTimestamp("time");
 	    	  //System.out.println(rs.getInt("Association_ID")+"\t"+rs.getString("uid")+"\t"+rs.getShort("in_port")
-	    			  //+"\t"+rs.getLong("sw_dpid")+"\t"+rs.getString("src_mac")+"\t"+rs.getString("dst_mac")
+	    			  //+"\t"+rs.getString("sw_dpid")+"\t"+rs.getString("src_mac")+"\t"+rs.getString("dst_mac")
 	    			  //+"\t"+rs.getString("src_ip")+"\t"+rs.getString("dst_ip")+"\t"+rs.getInt("src_port")+"\t"+rs.getInt("dst_port")
 	    			  //+"\t"+rs.getByte("protocol")+"\t"+rs.getTimestamp("time"));
 	      break;
@@ -242,6 +242,6 @@ public class ResourceAdaptor {
 		  //test.dropTable();
 		  //test.createTable();//no use
 		  test.SelectTable(selectSQL);
-		  //test.insertTable((int)7788, "Alex", (short)3, (long)15, "10:00:00:00:00:02", "10:00:00:00:00:03", "140.113.215.4", "8.8.8.8", (int)17, (int)6, (byte)4, sqlTimestamp);
+		  //test.insertTable((int)7788, "Alex", (short)3, "00:00:00:00:00:00:00:04", "10:00:00:00:00:02", "10:00:00:00:00:03", "140.113.215.4", "8.8.8.8", (int)17, (int)6, (byte)4, sqlTimestamp);
 	  }*/ 
 }
