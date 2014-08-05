@@ -67,7 +67,7 @@ public class SocketServer extends java.lang.Thread {
                 
                 DataOutputStream out = new DataOutputStream(socket.getOutputStream());
                 String result = newdispatcher.forwarding_or_not().toString();
-                System.out.println("==="+result+"===");
+                System.out.println("Forwarding or not: "+result);
 				out.writeUTF(result);
 				out.flush();
 
