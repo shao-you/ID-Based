@@ -11,6 +11,7 @@ public class Location_time_aware implements Callback {
 	//final private java.sql.Timestamp time;
 	//final private long sw_dpid;
 	
+	@Override 
 	public void register_IDs(Register register)
 	{
 		this.register = register;
