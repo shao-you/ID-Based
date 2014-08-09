@@ -23,7 +23,6 @@ public class Location_time_aware implements Callback {
     public Boolean policy_action(final String metadata) {  //do the checking & set rules
 		//restore JSON record
 		JSONObject record_json=null;
-
 		try {
 			record_json = new JSONObject(metadata);
 		} catch (JSONException e1) {
@@ -34,7 +33,7 @@ public class Location_time_aware implements Callback {
 		
 		//read the external list
 		
-		//decide the intelligent
+		//decide whether to block the device
 		Boolean forwarding_or_not = false;//need to set rules, forwarding should stop
 
 		//set rules
@@ -69,23 +68,8 @@ public class Location_time_aware implements Callback {
 			} catch (IOException | JSONException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
-			}/**/
+			}
 		}
-		
-		/*Thread thread = new Thread(new Runnable() {  
-            @Override  
-            public void run() {  
-            	//set rules
-            	System.out.println(result);  
-            }  
-        });
-		thread.start();  
-        try {
-			thread.join();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}*/
         return forwarding_or_not;//return if this flow should be forwarded or not
     }
 	
