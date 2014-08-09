@@ -158,7 +158,7 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 				SwitchPort[] srcDaps = srcDevice.getAttachmentPoints();//Get all unique attachment points associated with the device.
 				SwitchPort[] dstDaps = dstDevice.getAttachmentPoints();
 			    
-			    if(srcDaps.length==0) System.out.println("=========================");
+			    if(srcDaps.length==0) {System.out.println("FAILED TO GET in_port!!");return Command.CONTINUE;}
 			    else in_port = (short)srcDaps[0].getPort();
 			    /*sw_dpid = srcDaps[0].getSwitchDPID();
 			    int iSrcDaps = 0, iDstDaps = 0;
@@ -206,10 +206,9 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 				System.out.println(Association_ID+"  "+uid+"  "+in_port+"  "+sw_dpid+"  "+src_mac+"  "+dst_mac+"  "+src_ip+"  "+dst_ip+"  "+src_port+"  "+dst_port+"  "+protocol+"  "+time);
 				//query Registered_mac table to check idle/pass of src_mac
 				/*result = DB_manipulate.SelectTable(mac_idle_pass);
-				if(result[0] == null || (int)result[3] == 0) ;//not auth
-				else if((int)result[3] == 1)//deliver Association_ID of new record to Dispatcher*/
+				if((int)result[3] == 0) ;//not auth yet
+				else //deliver the whole metadata (or only Association_ID) of new record to Dispatcher*/
 				//{
-					//Asso_record record = new Asso_record(Association_ID, uid, in_port, sw_dpid, src_mac, dst_mac, src_ip, dst_ip, src_port, dst_port, protocol, time);
 					Map map = new HashMap();
 					map.put("Association_ID", Association_ID);
 					map.put("uid", uid);
@@ -223,8 +222,7 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 					map.put("dst_port", dst_port);
 					map.put("protocol", protocol);
 					map.put("time", time);
-					JSONObject record_json=null;
-					record_json = new JSONObject(map);
+					JSONObject record_json = new JSONObject(map);
 					System.out.println(record_json);
 					SocketClient client = new SocketClient();
 					client.connect_server(record_json);//will wait for the upper layer to complete
@@ -242,7 +240,6 @@ public class HeaderExtract implements IOFMessageListener, IFloodlightModule {
 			}//end switch
 		}//end if
 		return Command.CONTINUE;
-		//return Command.STOP;
 	}
 	
 	private void pushPacket(IOFSwitch sw, OFMatch match, OFPacketIn pi, short outport) {
